@@ -81,53 +81,91 @@ Vue.mixin({
     footerSettings_navigation() {
       return [
         {
-          id: "/liquorice/privacy-policy/",
+          id: "privacy-policy",
           home: false,
           name: "Privacy Policy",
-          url: "/liquorice/privacy-policy/",
+          url: "/privacy-policy/",
           show: true,
           item_type: "custom",
         },
         {
-          id: "/liquorice/terms-of-sale/",
+          id: "terms-of-sale",
           home: false,
           name: "Terms Of Sale",
-          url: "/liquorice/terms-of-sale/",
+          url: "/terms-of-sale/",
           show: true,
           item_type: "custom",
         },
       ];
     },
+    contentBody() {
+      console.log(this.$route);
+      const _pageSlug =
+        this.$route.params && this.$route.params.pageSlug
+          ? this.$route.params.pageSlug
+          : false;
+      if (_pageSlug === "privacy-policy") {
+        return contentBodyForRegularPages(
+          siteData.variation.template_parts.privacy
+        );
+      } else if (_pageSlug === "terms-of-sale") {
+        console.log(siteData.variation.template_parts.terms);
+        return contentBodyForRegularPages(
+          siteData.variation.template_parts.terms
+        );
+      } else {
+        return contentBodyForRegularPages(
+          siteData.variation.template_parts.blocks
+        );
+      }
+    },
   },
   methods: {
-    async directToPage(pageID) {
-      // redirect to the next page
-      const _pageSlug = this.getPageSlug(pageID);
+    async directToPage(pageId) {
+      // find home page if page id is not set
+      if (!pageId) {
+        pageId = this.findHomepageId();
+      }
+      // get page slug
+      const _pageSlug =
+        pageId === "privacy-policy" || pageId === "terms-of-sale"
+          ? pageId
+          : this.getPageSlug(pageId);
+
+      // get page Content
+      const _currentPageData = this.getBlockByPageId(pageId);
+      console.log(_currentPageData);
       // / for homepage (root top)
       await this.$router.push(
-        { path: _pageSlug || "/" },
+        {
+          path: _pageSlug || "/",
+          name: _currentPageData.title,
+          params: {
+            meta: {
+              title: _currentPageData.title,
+              titleTemplate: "%s | " + siteData.projectTitle,
+            },
+          },
+        },
         // onComplete
         () => {
-          this.pageUpdatedSequencer(pageID);
+          this.$root.currentPageData = _currentPageData;
         },
         // onAbort
         (error) => error
       );
     },
-    /**
-     * Sets currentPageData in the root.
-     * @returns   Returns nothing.
-     */
-    pageUpdatedSequencer() {
-      // find the id of current page by router's pageSlug. Empty means home.
-      const _pageSlug = this.$route.params.pageSlug || "";
-      const _pageId =
-        this.$route.query && this.$route.query.page_id
-          ? this.$route.query.page_id
-          : this.findIdBySlug(_pageSlug);
-
-      // set the blocks
-      this.$root.currentPageData = this.getBlockByPageId(_pageId);
+    findHomepageId() {
+      const _homePageData = siteData.pages.find(
+        (element) => element.is_home == true
+      );
+      return !_homePageData ? siteData.pages[0].id : _homePageData.id;
+    },
+    getPageSlug(pageId) {
+      const _currentPageData = siteData.pages.find(
+        (element) => element.id == pageId
+      );
+      return _currentPageData.slug;
     },
     findIdBySlug(slug) {
       const _foundData = siteData.pages.find((element) => element.slug == slug);
@@ -138,13 +176,16 @@ Vue.mixin({
      * if found return page data, if not found , return 404 page
      */
     getBlockByPageId(pageId) {
+      if (pageId === "privacy-policy" || pageId === "terms-of-sale") {
+        return {
+          blocks: [],
+        };
+      }
       const _currentPageData = siteData.pages.find(
         (element) => element.id == pageId
       );
       if (_currentPageData) {
-        if (this.$route.query && this.$route.query.page_id) {
-          router.push({ path: _currentPageData.slug });
-        }
+        // in case of page redirected from 404 as a workaround of direct url page
         return _currentPageData;
       } else {
         return {
@@ -159,12 +200,7 @@ Vue.mixin({
         };
       }
     },
-    getPageSlug(pageId) {
-      const _currentPageData = siteData.pages.find(
-        (element) => element.id == pageId
-      );
-      return _currentPageData.slug;
-    },
+
     /**
      * Component Methods
      */
@@ -188,6 +224,14 @@ Vue.mixin({
         video.removeEventListener("timeupdate", this.mediaProgress);
       }
     },
+    // aux pages
+    // contentBody() {
+    //   console.log(this);
+    //   return contentBodyForRegularPages;
+    //   // const _ pageId === "privacy-policy"
+    //   //   ? siteData.variation.template_parts.privacy
+    //   //   : siteData.variation.template_parts.terms;
+    // },
     /**
      * Calculates and shows play progress of IG video in grid
      * @param {object} video

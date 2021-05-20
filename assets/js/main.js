@@ -11,7 +11,11 @@ var app = new Vue({
     };
   },
   mounted() {
-    this.pageUpdatedSequencer();
+    const _pageId =
+      this.$route.query && this.$route.query.page_id
+        ? this.$route.query.page_id
+        : null;
+    this.directToPage(_pageId);
     window.onload = function () {
       window.initCookieConsent();
     };

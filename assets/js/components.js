@@ -15,53 +15,55 @@ Vue.component("Layout", {
   },
 });
 
-Vue.component("ContentBody", {
-  name: "ContentBody",
-  // components: blockComponents,
-  template: decodeURIComponent(
-    siteData.variation.template_parts.blocks.template
-  ),
-  data() {
-    return {
-      wrapperClass: "fe-flex-1",
-      filter: "all",
-      markClassSettings: siteData.variation.class_attributes.markClasses,
-      inlineCodeClassSettings:
-        siteData.variation.class_attributes.inlineCodeClasses,
-      filterClassSettings: siteData.variation.class_attributes.filterClasses,
-    };
-  },
-  methods: {
-    /**
-     * Get all the types of grid items and return as an array for the filter menu.
-     * @param {Array} gridItems     Contents of grid items (block.data.items)
-     * @returns  Array or boolean   Returns an array with all the item types available or false when it is not necessary to show the filter.
-     */
-    getGridFilterItemsInArray(gridItems = []) {
-      // Don't show filter if there aren't any items
-      if (gridItems.length < 1) {
+var contentBodyForRegularPages = (templatePartsData) => {
+  console.log(templatePartsData);
+  const _dataProperty = templatePartsData.data ? templatePartsData.data : null;
+  return {
+    name: "ContentBody",
+    template: decodeURIComponent(templatePartsData.template),
+    data() {
+      return {
+        wrapperClass: "fe-flex-1",
+        filter: "all",
+        markClassSettings: siteData.variation.class_attributes.markClasses,
+        inlineCodeClassSettings:
+          siteData.variation.class_attributes.inlineCodeClasses,
+        filterClassSettings: siteData.variation.class_attributes.filterClasses,
+        ..._dataProperty,
+      };
+    },
+    methods: {
+      /**
+       * Get all the types of grid items and return as an array for the filter menu.
+       * @param {Array} gridItems     Contents of grid items (block.data.items)
+       * @returns  Array or boolean   Returns an array with all the item types available or false when it is not necessary to show the filter.
+       */
+      getGridFilterItemsInArray(gridItems = []) {
+        // Don't show filter if there aren't any items
+        if (gridItems.length < 1) {
+          return false;
+        }
+
+        const types = [...new Set(gridItems.map((item) => item.type))];
+
+        if (types.length > 1) {
+          return ["all", ...types];
+        }
+
+        // No need to show filter: there is only one item type
         return false;
-      }
+      },
+      async getPageFeaturedMedia(pageID) {
+        const { data } = await vm.$Page.get(this.project.id, pageID);
 
-      const types = [...new Set(gridItems.map((item) => item.type))];
-
-      if (types.length > 1) {
-        return ["all", ...types];
-      }
-
-      // No need to show filter: there is only one item type
-      return false;
+        return get(data, "page.featured_media_path");
+      },
+      updateFilter(link) {
+        this.filter = link;
+      },
     },
-    async getPageFeaturedMedia(pageID) {
-      const { data } = await vm.$Page.get(this.project.id, pageID);
-
-      return get(data, "page.featured_media_path");
-    },
-    updateFilter(link) {
-      this.filter = link;
-    },
-  },
-});
+  };
+};
 
 //
 // Create component helper
