@@ -138,7 +138,7 @@ Vue.mixin({
       // / for homepage (root top)
       await this.$router.push(
         {
-          path: _pageSlug || "/",
+          path: "/" + _pageSlug || "/",
           name: _currentPageData.title,
           params: {
             meta: {
