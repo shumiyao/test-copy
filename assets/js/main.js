@@ -20,4 +20,7 @@ var app = new Vue({
       window.initCookieConsent();
     };
   },
+  updated() {
+    this.initializePageScripts();
+  },
 });

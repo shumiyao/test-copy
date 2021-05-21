@@ -33,6 +33,13 @@ Vue.mixin({
     variation() {
       return this.template.variations[this.project.settings_design.variation];
     },
+    gridUseHeight() {
+      return this.project.settings_design &&
+        this.project.settings_design.grid &&
+        this.project.settings_design.grid.useHeight
+        ? this.project.settings_design.grid.useHeight
+        : false;
+    },
     storageUrl() {
       return "";
     },
@@ -99,17 +106,12 @@ Vue.mixin({
       ];
     },
     contentBody() {
-      console.log(this.$route);
-      const _pageSlug =
-        this.$route.params && this.$route.params.pageSlug
-          ? this.$route.params.pageSlug
-          : false;
-      if (_pageSlug === "privacy-policy") {
+      const _pagePath = this.$route.path;
+      if (_pagePath === "/privacy-policy") {
         return contentBodyForRegularPages(
           siteData.variation.template_parts.privacy
         );
-      } else if (_pageSlug === "terms-of-sale") {
-        console.log(siteData.variation.template_parts.terms);
+      } else if (_pagePath === "/terms-of-sale") {
         return contentBodyForRegularPages(
           siteData.variation.template_parts.terms
         );
@@ -134,7 +136,6 @@ Vue.mixin({
 
       // get page Content
       const _currentPageData = this.getBlockByPageId(pageId);
-      console.log(_currentPageData);
       // / for homepage (root top)
       await this.$router.push(
         {
@@ -178,6 +179,8 @@ Vue.mixin({
     getBlockByPageId(pageId) {
       if (pageId === "privacy-policy" || pageId === "terms-of-sale") {
         return {
+          title:
+            pageId === "privacy-policy" ? "Privacy Policy" : "Terms of Sale",
           blocks: [],
         };
       }
@@ -224,14 +227,6 @@ Vue.mixin({
         video.removeEventListener("timeupdate", this.mediaProgress);
       }
     },
-    // aux pages
-    // contentBody() {
-    //   console.log(this);
-    //   return contentBodyForRegularPages;
-    //   // const _ pageId === "privacy-policy"
-    //   //   ? siteData.variation.template_parts.privacy
-    //   //   : siteData.variation.template_parts.terms;
-    // },
     /**
      * Calculates and shows play progress of IG video in grid
      * @param {object} video
@@ -282,6 +277,82 @@ Vue.mixin({
       }
 
       return url;
+    },
+    /**
+     * Initializes Page Scripts
+     */
+    initializePageScripts() {
+      console.log("TODO: Page Scripts INIT");
+      return;
+      const videos = document.getElementsByTagName("video");
+
+      Array.from(videos).forEach((video) => {
+        video.poster = video.poster.replace(/&amp;/g, "&");
+      });
+
+      // Responsive embeds
+      const embeds = new tmResponsiveVideo(".embed");
+
+      /**
+       * Preloads media
+       * @param {Object} visibeItem
+       */
+      const mediaLoad = (visibleItem) => {
+        let itemToLoad = visibleItem.querySelector("[data-src]");
+        if (itemToLoad != null) {
+          let loadmedia = new loadMedia(itemToLoad, {
+            onLoaded: function (loadedItem) {
+              let type = loadedItem.closest(".grid-item")
+                ? ".grid-item"
+                : loadedItem.closest(".lazyload-video")
+                ? ".lazyload-video"
+                : ".lazyload-image";
+              preloader.removeFrom(loadedItem.closest(type));
+              if (type === ".grid-item") {
+                classList(loadedItem.closest("figure")).addClass("loaded");
+              } else {
+                classList(loadedItem.parentNode.parentNode).addClass("loaded");
+              }
+            },
+          });
+
+          loadmedia.initialize();
+        }
+      };
+
+      // Grid lazy loading
+      const inview = new inView(
+        ".grid-item, .lazyload-video, .lazyload-image",
+        {
+          threshold: 0.5,
+          unObserveViewed: true,
+          detectionBuffer: 100,
+          inView: function (visibleItem) {
+            preloader.addTo(visibleItem);
+            if (
+              visibleItem.classList.contains("type-project") &&
+              visibleItem.getElementsByTagName("IMG").length == 0
+            ) {
+              visibleItem.children[0].classList.add("loaded");
+              preloader.removeFrom(visibleItem);
+            } else {
+              mediaLoad(visibleItem);
+            }
+          },
+        }
+      );
+
+      embeds.initialize();
+      document.lightbox = GLightbox();
+      inview.initialize();
+
+      // Grid
+      const gridProjects = document.querySelector(".grid-projects");
+
+      if (gridProjects && this.gridUseHeight) {
+        gridProjects.classList.add("use-height");
+        window.addEventListener("resize", this.updateGridItemSizes, false);
+      }
     },
   },
 });

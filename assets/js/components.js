@@ -16,7 +16,6 @@ Vue.component("Layout", {
 });
 
 var contentBodyForRegularPages = (templatePartsData) => {
-  console.log(templatePartsData);
   const _dataProperty = templatePartsData.data ? templatePartsData.data : null;
   return {
     name: "ContentBody",

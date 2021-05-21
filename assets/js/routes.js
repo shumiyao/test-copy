@@ -11,7 +11,6 @@ var router = new VueRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  console.log(to);
   const _metaParameters = to.params.meta || false;
   document.title =
     _metaParameters && _metaParameters.title
